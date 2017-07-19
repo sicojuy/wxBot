@@ -4,12 +4,13 @@
 from wxbot import *
 import datetime
 
-task_help = '''通过以下命令来管理定时发送任务：
-查看
-添加
-删除'''
+help_msg = '''支持以下命令：
 
-task_time_help = '''请输入发送日期和时间（注意使用空格分隔日期跟时间），例如：
+001. 查看定时任务
+002. 添加定时任务
+003. 删除定时任务'''
+
+task_time_help = '''请输入发送日期和时间（使用空格分隔日期跟时间），例如：
 今天 07:30
 明天 19:30
 后天 12:12
@@ -17,31 +18,27 @@ task_time_help = '''请输入发送日期和时间（注意使用空格分隔日
 10-10 07:07
 '''
 
-task_user_help = '''请输入接收人/群'''
+task_user_help = '''请输入接收人'''
 
 task_content_help = '''请输入发送内容'''
 
-del_task_help = '''请输入要删除的任务编号'''
 
-
-class TextType:
-    Normal = 0
+class InputType:
     TaskTime = 1
     TaskUser = 2
     TaskContent = 3
-    DelTask = 4
+    TaskID = 4
 
 class MyWXBot(WXBot):
     def __init__(self):
         WXBot.__init__(self)
-        self.sessions = {}
         self.tasks = []
         self.task_adding = {}
-        self.text_type = 0
+        self.input_type = None
 
-    def show_tasks(self):
+    def tasks_list(self):
         if len(self.tasks) == 0:
-            return "当前没有定时发送任务"
+            return "当前没有定时任务"
         msg = ""
         i = 1
         for task in self.tasks:
@@ -52,7 +49,7 @@ class MyWXBot(WXBot):
         return msg
 
     def handle_text_msg(self, msg):
-        if self.text_type == TextType.TaskTime:
+        if self.input_type == InputType.TaskTime:
             items = msg.split(None, 1)
             if items[0] in ['今日', '今天']:
                 date = datetime.date.today()
@@ -74,18 +71,18 @@ class MyWXBot(WXBot):
                 return '时间格式不对，请重新输入'
 
             self.task_adding['time'] = datetime.datetime.combine(date, time.time())
-            self.text_type = TextType.TaskUser
+            self.input_type = InputType.TaskUser
             return task_user_help
-        elif self.text_type == TextType.TaskUser:
+        elif self.input_type == InputType.TaskUser:
             self.task_adding['user'] = {
                 "name": msg,
                 "id": 111
             }
-            self.text_type = TextType.TaskContent
+            self.input_type = InputType.TaskContent
             return task_content_help
-        elif self.text_type == TextType.TaskContent:
+        elif self.input_type == InputType.TaskContent:
             self.task_adding['content'] = msg
-            self.text_type = TextType.Normal
+            self.input_type = None
             result = "成功添加任务\n\n"
             result += "发送时间：%s\n" % self.task_adding['time'].strftime("%m-%d %H:%M")
             result += "接收人：%s\n" % self.task_adding['user']['name']
@@ -93,42 +90,46 @@ class MyWXBot(WXBot):
             self.tasks.append(self.task_adding)
             self.task_adding = {}
             return result
-        elif self.text_type == TextType.DelTask:
+        elif self.input_type == InputType.TaskID:
             try:
                 i = int(msg)
             except ValueError:
-                return '任务编号为数字，可以输入"查看"获取任务编号'
+                return '任务编号为数字，请重新输入'
             if i > len(self.tasks) or i <= 0:
                 return '任务不存在，请重新输入任务编号'
             self.tasks = self.tasks[:i-1] + self.tasks[i:]   
-            self.text_type = TextType.Normal
-            result = '成功删除任务'
+            self.input_type = None
+            result = '成功删除定时任务'
             return result
         else:
-            print "invalid text type: %d" % self.text_type
+            print "invalid text type: %d" % self.input_type
             return '内部异常'
 
     def handle_self_msg(self, msg):
         print "handle self msg"
         ctype = msg['content']['type']
-        cdata = msg['content']['data'].encode('utf-8')
+        cdata = msg['content']['data'].encode('utf-8').strip()
         uid = msg['user']['id']
         if ctype == 0:
-            if cdata == '帮助':
-                self.send_msg_by_uid(task_help, uid)
-            elif cdata == '查看':
-                self.send_msg_by_uid(self.show_tasks(), uid)
-            elif cdata == '添加':
-                self.text_type = TextType.TaskTime
+            if cdata in ['帮助', 'help']:
+                self.send_msg_by_uid(help_msg, uid)
+            elif cdata in ['001', '查看定时任务']:
+                result = self.tasks_list()
+                self.send_msg_by_uid(result, uid)
+            elif cdata in ['002', '添加定时任务']:
+                self.input_type = InputType.TaskTime
                 self.send_msg_by_uid(task_time_help, uid)
-            elif cdata == '删除':
-                self.text_type = TextType.DelTask
-                self.send_msg_by_uid(del_task_help, uid)
-            elif self.text_type != TextType.Normal:
+            elif cdata in ['003', '删除定时任务']:
+                self.input_type = InputType.TaskID
+                result = self.tasks_list()
+                if len(self.tasks) > 0:
+                    result += "\n\n请输入要删除的任务编号"
+                self.send_msg_by_uid(result, uid)
+            elif self.input_type != None:
                 result = self.handle_text_msg(cdata)
                 self.send_msg_by_uid(result, uid)
             else:
-                self.send_msg_by_uid('无法识别指令, ' + task_help, uid)
+                print "pass msg: %s" % msg
         else:
             print "unknown msg content type id: %d" % msg['content']['type']
 
@@ -152,7 +153,7 @@ class MyWXBot(WXBot):
 def main():
     bot = MyWXBot()
     bot.DEBUG = True
-    bot.conf['qr'] = 'png'
+    bot.conf['qr'] = 'tty'
 
     bot.run()
 
