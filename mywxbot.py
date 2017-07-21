@@ -26,8 +26,9 @@ task_content_help = '''请输入发送内容'''
 class InputType:
     TaskTime = 1
     TaskUser = 2
-    TaskContent = 3
-    TaskID = 4
+    TaskUserID = 3
+    TaskContent = 4
+    TaskID = 5
 
 class MyWXBot(WXBot):
     def __init__(self):
@@ -35,6 +36,28 @@ class MyWXBot(WXBot):
         self.tasks = []
         self.task_adding = {}
         self.input_type = None
+        self.user_search = []
+
+    def find_users(self, name):
+        self.user_search = []
+        for user in self.contact_list:
+            if len(user['RemarkName']) > 0 and user['RemarkName'].find(name) != -1:
+                self.user_search.append({'UserName': user['UserName'], 'DisplayName': user['RemarkName']})
+            elif len(user['RemarkPYQuanPin']) > 0 and user['RemarkPYQuanPin'].find(name) != -1:
+                self.user_search.append({'UserName': user['UserName'], 'DisplayName': user['RemarkName']})
+            elif len(user['NickName']) > 0 and user['NickName'].find(name) != -1:
+                self.user_search.append({'UserName': user['UserName'], 'DisplayName': user['NickName']})
+            elif len(user['PYQuanPin']) > 0 and user['PYQuanPin'].find(name) != -1:
+                self.user_search.append({'UserName': user['UserName'], 'DisplayName': user['NickName']})
+        for group in self.group_list:
+            if len(group['RemarkName']) > 0 and group['RemarkName'].find(name) != -1:
+                self.user_search.append({'UserName': group['UserName'], 'DisplayName': group['RemarkName']})
+            elif len(group['RemarkPYQuanPin']) > 0 and group['RemarkPYQuanPin'].find(name) != -1:
+                self.user_search.append({'UserName': group['UserName'], 'DisplayName': group['RemarkName']})
+            elif len(group['NickName']) > 0 and group['NickName'].find(name) != -1:
+                self.user_search.append({'UserName': group['UserName'], 'DisplayName': group['NickName']})
+            elif len(group['PYQuanPin']) > 0 and group['PYQuanPin'].find(name) != -1:
+                self.user_search.append({'UserName': group['UserName'], 'DisplayName': group['NickName']})
 
     def tasks_list(self):
         if len(self.tasks) == 0:
@@ -44,20 +67,20 @@ class MyWXBot(WXBot):
         for task in self.tasks:
             if len(msg) > 0:
                 msg += "\n\n"
-            msg += "%d. 发送时间：%s；接收人：%s；内容：%s" % (i, task['time'].strftime("%m-%d %H:%M"), task['user']['name'], task['content'])
+            msg += "%d. 发送时间：%s；接收人：%s；内容：%s" % (i, task['time'].strftime("%m-%d %H:%M"), task['user']['name'].decode('utf-8'), task['content'].decode('utf-8'))
             i += 1
         return msg
 
     def handle_text_msg(self, msg):
         if self.input_type == InputType.TaskTime:
             items = msg.split(None, 1)
-            if items[0] in ['今日', '今天']:
+            if items[0] in [u'今日', u'今天']:
                 date = datetime.date.today()
-            elif items[0] in ['明日', '明天']:
+            elif items[0] in [u'明日', u'明天']:
                 date = datetime.date.today() + datetime.timedelta(days=1)
-            elif items[0] in ['后日', '后天']:
+            elif items[0] in [u'后日', u'后天']:
                 date = datetime.date.today() + datetime.timedelta(days=2)
-            elif items[0] in ['大后日', '大后天']:
+            elif items[0] in [u'大后日', u'大后天']:
                 date = datetime.date.today() + datetime.timedelta(days=3)
             else:
                 try:
@@ -72,9 +95,35 @@ class MyWXBot(WXBot):
             self.input_type = InputType.TaskUser
             return task_user_help
         elif self.input_type == InputType.TaskUser:
+            self.find_users(msg)
+            if len(self.user_search) == 0:
+                return '联系人不存在，请重新输入'
+            elif len(self.user_search) == 1:
+                self.task_adding['user'] = {
+                    "name": self.user_search[0]['DisplayName'],
+                    "id": self.user_search[0]['UserName']
+                }
+                self.input_type = InputType.TaskContent
+                return task_content_help
+            else:
+                result = ""
+                i = 1
+                for user in self.user_search:
+                    result += "%d. %s\n" % (i, user['DisplayName'].decode('utf-8'))
+                    i += 1
+                result += '\n请输入联系人编号选择联系人'
+                self.input_type = InputType.TaskUserID
+                return result
+        elif self.input_type == InputType.TaskUserID:
+            try:
+                i = int(msg)
+            except ValueError:
+                return '联系人编号为数字，请重新输入'
+            if i > len(self.user_search) or i <= 0:
+                return '联系人编号不正确，请重新输入'
             self.task_adding['user'] = {
-                "name": msg,
-                "id": 111
+                "name": self.user_search[i-1]['DisplayName'],
+                "id": self.user_search[i-1]['UserName']
             }
             self.input_type = InputType.TaskContent
             return task_content_help
@@ -83,8 +132,8 @@ class MyWXBot(WXBot):
             self.input_type = None
             result = "成功添加任务\n\n"
             result += "发送时间：%s\n" % self.task_adding['time'].strftime("%m-%d %H:%M")
-            result += "接收人：%s\n" % self.task_adding['user']['name']
-            result += "内容：%s" % self.task_adding['content']
+            result += "接收人：%s\n" % self.task_adding['user']['name'].decode('utf-8')
+            result += "内容：%s" % self.task_adding['content'].decode('utf-8')
             self.tasks.append(self.task_adding)
             self.task_adding = {}
             return result
@@ -106,32 +155,32 @@ class MyWXBot(WXBot):
     def handle_self_msg(self, msg):
         print "handle self msg"
         ctype = msg['content']['type']
-        cdata = msg['content']['data'].encode('utf-8').strip()
+        cdata = msg['content']['data'].strip()
         uid = msg['user']['id']
         if ctype == 0:
-            if cdata in ['帮助', 'help']:
+            if cdata in [u'帮助', 'help']:
                 self.send_msg_by_uid(help_msg, uid)
-            elif cdata in ['001', '查看定时任务']:
+            elif cdata in ['001', u'查看定时任务']:
                 result = self.tasks_list()
                 self.send_msg_by_uid(result, uid)
-            elif cdata in ['002', '添加定时任务']:
+            elif cdata in ['002', u'添加定时任务']:
                 self.input_type = InputType.TaskTime
                 self.send_msg_by_uid(task_time_help, uid)
-            elif cdata in ['003', '删除定时任务']:
+            elif cdata in ['003', u'删除定时任务']:
                 self.input_type = InputType.TaskID
                 result = self.tasks_list()
                 if len(self.tasks) > 0:
                     result += "\n\n请输入要删除的任务编号"
                 self.send_msg_by_uid(result, uid)
-            elif cdata in ['004', '查看群组']:
+            elif cdata in ['004', u'查看群组']:
                 print self.group_list
-            elif cdata in ['005', '查看联系人']:
+            elif cdata in ['005', u'查看联系人']:
                 print self.contact_list
             elif self.input_type != None:
                 result = self.handle_text_msg(cdata)
                 self.send_msg_by_uid(result, uid)
             else:
-                print "pass msg: %s" % msg
+                print "pass msg: %v" % msg
         else:
             print "unknown msg content type id: %d" % msg['content']['type']
 
