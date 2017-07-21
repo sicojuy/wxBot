@@ -64,12 +64,10 @@ class MyWXBot(WXBot):
                     date = datetime.datetime.strptime(items[0], "%m-%d")
                 except ValueError: 
                     return '日期格式不对，请重新输入'
-            
             try:
                 time = datetime.datetime.strptime(items[1], "%H:%M")
             except ValueError: 
                 return '时间格式不对，请重新输入'
-
             self.task_adding['time'] = datetime.datetime.combine(date, time.time())
             self.input_type = InputType.TaskUser
             return task_user_help
@@ -125,6 +123,10 @@ class MyWXBot(WXBot):
                 if len(self.tasks) > 0:
                     result += "\n\n请输入要删除的任务编号"
                 self.send_msg_by_uid(result, uid)
+            elif cdata in ['004', '查看群组']:
+                print self.group_list
+            elif cdata in ['005', '查看联系人']:
+                print self.contact_list
             elif self.input_type != None:
                 result = self.handle_text_msg(cdata)
                 self.send_msg_by_uid(result, uid)
@@ -154,7 +156,6 @@ def main():
     bot = MyWXBot()
     bot.DEBUG = True
     bot.conf['qr'] = 'tty'
-
     bot.run()
 
 
