@@ -96,13 +96,40 @@ class Tasker(threading.Thread):
         self.lock.release()
         return result[:-1]
 
+    def check_tasks(self):
+        print("check tasks")
+        self.lock.acquire()
+        if len(self.wxbot.contact_list) == 0:
+            print("hasn't logined")
+            self.lock.release()
+            return
+        now = time.time()
+        i = 0
+        n = len(self.tasks)
+        while i < n:
+            task = self.tasks[i]
+            if task['time']['tmestamp'] < now - 600:
+                i += 1
+            elif task['time']['timestamp'] < now:
+                if self.wxbot.send_msg_by_uid(task['content'], task['user']['id']):
+                    i+= 1
+                else:
+                    print("send msg failed, retry...")
+                    break
+            else:
+                break
+        if i > 0:
+            self.tasks = self.tasks[i:]
+            self.save_tasks()
+        self.lock.release()
+
     def stop(self):
         self.stop_event.set()
 
     def run(self):
         while(not self.stop_event.is_set()):
-            print("tasker running")
-            self.stop_event.wait(30)
+            self.check_tasks()
+            self.stop_event.wait(10)
 
 
 class MyWXBot(WXBot):
