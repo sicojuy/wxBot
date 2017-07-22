@@ -67,7 +67,7 @@ class MyWXBot(WXBot):
         for task in self.tasks:
             if len(msg) > 0:
                 msg += "\n\n"
-            msg += "%d. 发送时间：%s；接收人：%s；内容：%s" % (i, task['time'].strftime("%m-%d %H:%M"), task['user']['name'].decode('utf-8'), task['content'].decode('utf-8'))
+            msg += "%d. 发送时间：%s；接收人：%s；内容：%s" % (i, task['time'].strftime("%m-%d %H:%M"), task['user']['name'].encode('utf-8'), task['content'].encode('utf-8'))
             i += 1
         return msg
 
@@ -109,7 +109,7 @@ class MyWXBot(WXBot):
                 result = ""
                 i = 1
                 for user in self.user_search:
-                    result += "%d. %s\n" % (i, user['DisplayName'].decode('utf-8'))
+                    result += "%d. %s\n" % (i, user['DisplayName'].encode('utf-8'))
                     i += 1
                 result += '\n请输入联系人编号选择联系人'
                 self.input_type = InputType.TaskUserID
@@ -132,8 +132,8 @@ class MyWXBot(WXBot):
             self.input_type = None
             result = "成功添加任务\n\n"
             result += "发送时间：%s\n" % self.task_adding['time'].strftime("%m-%d %H:%M")
-            result += "接收人：%s\n" % self.task_adding['user']['name'].decode('utf-8')
-            result += "内容：%s" % self.task_adding['content'].decode('utf-8')
+            result += "接收人：%s\n" % self.task_adding['user']['name'].encode('utf-8')
+            result += "内容：%s" % self.task_adding['content'].encode('utf-8')
             self.tasks.append(self.task_adding)
             self.task_adding = {}
             return result
