@@ -67,6 +67,8 @@ class Tasker(threading.Thread):
             if self.tasks[i]['time']['timestamp'] > task['time']['timestamp']:
                 self.tasks[i+1] = self.tasks[i]
                 i -= 1
+            else:
+                break
         self.tasks[i+1] = task
         self.save_tasks()
         self.lock.release()
@@ -76,7 +78,7 @@ class Tasker(threading.Thread):
         if pos > len(self.tasks) or pos <= 0:
             self.lock.release()
             return -1
-        self.tasks = self.tasks[:i-1] + self.tasks[i:]   
+        self.tasks = self.tasks[:pos-1] + self.tasks[pos:]
         self.save_tasks()
         self.lock.release()
         return 0
@@ -89,7 +91,7 @@ class Tasker(threading.Thread):
         result = u""
         i = 1
         for task in self.tasks:
-            result += u"%d. 发送时间：%s；接收人：%s；内容：%s\n" % (i, task['time']['format'], task['user']['name'], tsk['content'])
+            result += u"%d. 发送时间：%s；接收人：%s；内容：%s\n" % (i, task['time']['format'], task['user']['name'], task['content'])
             i += 1
         self.lock.release()
         return result[:-1]
@@ -113,8 +115,7 @@ class MyWXBot(WXBot):
         self.input_type = None
         self.user_search = []
 
-    def run(self):
-        WXBot.run(self)
+    def stop(self):
         print("stop tasker")
         self.tasker.stop()
         print("wait tasker to exit")
@@ -281,6 +282,7 @@ def main():
     bot.DEBUG = True
     bot.conf['qr'] = 'tty'
     bot.run()
+    bot.stop()
 
 
 if __name__ == '__main__':
