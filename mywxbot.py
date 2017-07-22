@@ -41,11 +41,12 @@ class Tasker(threading.Thread):
         self.stop_event = threading.Event()
         self.tasks = []
         self.wxbot = wxbot
+        self.task_file = "%s_tasks" % self.wxbot.my_account['UserName'][1:]
         self.load_tasks()
 
     def load_tasks(self):
-        if os.path.isfile("./tasks"):
-            f = open("./tasks", "r")
+        if os.path.isfile(self.task_file)
+            f = open(self.task_file, "r")
             try:
                 self.tasks = json.load(f)
             except:
@@ -55,7 +56,7 @@ class Tasker(threading.Thread):
             self.tasks = []
 
     def save_tasks(self):
-        f = open("./tasks", "w")
+        f = open(self.task_file, "w")
         json.dump(self.tasks, f)
         f.close()
 
@@ -102,23 +103,23 @@ class Tasker(threading.Thread):
         if len(self.tasks) == 0:
             print("no task")
             self.lock.release()
-            return
+            return False
         if len(self.wxbot.contact_list) == 0:
             print("hasn't logined")
             self.lock.release()
-            return
+            return False
         now = time.time()
         task = self.tasks[0]
         if task['time']['timestamp'] > now:
             print("next task time: %s" % task['time']['format'])
             self.lock.release()
-            return
+            return False
         if task['time']['timestamp'] < now - 600:
             print("task expired, remove it")
             self.tasks = self.tasks[1:]
             self.save_tasks()
             self.lock.release()
-            return
+            return True
         print(u"send msg to %s, %s" % (task['user']['name'], task['content']))
         rt = self.wxbot.send_msg_by_uid(task['content'], task['user']['id'])
         print('send msg return: %s' % rt)
@@ -127,22 +128,25 @@ class Tasker(threading.Thread):
             self.save_tasks()
         self.lock.release()
         print('check task done')
+        return True
 
     def stop(self):
         self.stop_event.set()
 
     def run(self):
         while(not self.stop_event.is_set()):
-            self.check_tasks()
-            self.stop_event.wait(3)
+            ok = self.check_tasks()
+            if ok:
+                self.stop_event.wait(3)
+            else:
+                self.stop_event.wait(30)
 
 
 class MyWXBot(WXBot):
     def __init__(self):
         WXBot.__init__(self)
         self.lock = threading.Lock()
-        self.tasker = Tasker(self)
-        self.tasker.start()
+        self.tasker = None
         self.task_adding = {}
         self.input_type = None
         self.user_search = []
@@ -152,6 +156,14 @@ class MyWXBot(WXBot):
         self.tasker.stop()
         print("wait tasker to exit")
         self.tasker.join()
+
+    def init(self):
+        rt = WXBot.init(self):
+        if not rt:
+            return rt
+        self.tasker = Tasker(self)
+        self.tasker.start()
+        return rt
 
     def find_users(self, name):
         name = name.lower()
@@ -287,10 +299,8 @@ class MyWXBot(WXBot):
                 if result[0] == '1':
                     result += u"\n\n请输入要删除的任务编号"
                 self.send_msg_by_uid(result, uid)
-            elif cdata in [u'查看群组']:
-                print(self.group_list)
-            elif cdata in [u'查看联系人']:
-                print(self.contact_list)
+            elif cdata in [u'xxx']:
+                print(self.my_account)
             elif self.input_type != None:
                 result = self.handle_input_msg(cdata)
                 self.send_msg_by_uid(result, uid)
