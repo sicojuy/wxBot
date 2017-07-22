@@ -220,9 +220,11 @@ class MyWXBot(WXBot):
             if len(self.user_search) == 0:
                 return u'联系人不存在，请重新输入'
             elif len(self.user_search) == 1:
+                name = self.to_unicode(self.user_search[0]['DisplayName'])
+                uid = self.to_unicode(self.user_search[0]['UserName'])
                 self.task_adding['user'] = {
-                    "name": self.user_search[0]['DisplayName'],
-                    "id": self.user_search[0]['UserName']
+                    "name": name,
+                    "id": uid
                 }
                 self.input_type = InputType.TaskContent
                 return task_content_help
@@ -242,9 +244,11 @@ class MyWXBot(WXBot):
                 return u'联系人编号为数字，请重新输入'
             if i > len(self.user_search) or i <= 0:
                 return u'联系人编号不正确，请重新输入'
+            name = self.to_unicode(self.user_search[i-1]['DisplayName'])
+            uid = self.to_unicode(self.user_search[i-1]['UserName'])
             self.task_adding['user'] = {
-                "name": self.user_search[i-1]['DisplayName'],
-                "id": self.user_search[i-1]['UserName']
+                "name": name,
+                "id": uid
             }
             self.input_type = InputType.TaskContent
             return task_content_help
@@ -278,7 +282,7 @@ class MyWXBot(WXBot):
 
     def handle_command_msg(self, msg):
         ctype = msg['content']['type']
-        cdata = msg['content']['data'].strip()
+        cdata = self.to_unicode(msg['content']['data'].strip())
         uid = msg['user']['id']
         if ctype == 0:
             if cdata in [u'帮助', 'help']:
