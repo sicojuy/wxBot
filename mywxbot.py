@@ -146,17 +146,22 @@ class MyWXBot(WXBot):
     def handle_input_msg(self, msg):
         if self.input_type == InputType.TaskTime:
             items = msg.split(None, 1)
+            today = datetime.date.today()
             if items[0] in [u'今日', u'今天']:
-                date = datetime.date.today()
+                date = today
             elif items[0] in [u'明日', u'明天']:
-                date = datetime.date.today() + datetime.timedelta(days=1)
+                date = today + datetime.timedelta(days=1)
             elif items[0] in [u'后日', u'后天']:
-                date = datetime.date.today() + datetime.timedelta(days=2)
+                date = today + datetime.timedelta(days=2)
             elif items[0] in [u'大后日', u'大后天']:
-                date = datetime.date.today() + datetime.timedelta(days=3)
+                date = today + datetime.timedelta(days=3)
             else:
                 try:
-                    date = datetime.datetime.strptime(items[0], "%m-%d")
+                    dt = datetime.datetime.strptime(items[0], "%m-%d")
+                    if dt.month >= today.month:
+                        date = datetime.date(today.year, dt.month, dt.day)
+                    else:
+                        date = datetime.date(today.year+1, dt.month, dt.day)
                 except ValueError: 
                     return u'日期格式不对，请重新输入'
             try:
@@ -231,7 +236,6 @@ class MyWXBot(WXBot):
         self.lock.release()
 
     def handle_command_msg(self, msg):
-        print("handle self msg")
         ctype = msg['content']['type']
         cdata = msg['content']['data'].strip()
         uid = msg['user']['id']
