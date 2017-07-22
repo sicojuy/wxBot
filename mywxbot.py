@@ -99,29 +99,34 @@ class Tasker(threading.Thread):
     def check_tasks(self):
         print("check tasks")
         self.lock.acquire()
+        if len(self.tasks) == 0:
+            print("no task")
+            self.lock.release()
+            return
         if len(self.wxbot.contact_list) == 0:
             print("hasn't logined")
             self.lock.release()
             return
         now = time.time()
-        i = 0
-        n = len(self.tasks)
-        while i < n:
-            task = self.tasks[i]
-            if task['time']['tmestamp'] < now - 600:
-                i += 1
-            elif task['time']['timestamp'] < now:
-                if self.wxbot.send_msg_by_uid(task['content'], task['user']['id']):
-                    i+= 1
-                else:
-                    print("send msg failed, retry...")
-                    break
-            else:
-                break
-        if i > 0:
-            self.tasks = self.tasks[i:]
+        task = self.tasks[0]
+        if task['time']['timestamp'] > now:
+            print("next task time: %s" % task['time']['format'])
+            self.lock.release()
+            return
+        if task['time']['timestamp'] < now - 600:
+            print("task expired, remove it")
+            self.tasks = self.tasks[1:]
+            self.save_tasks()
+            self.lock.release()
+            return
+        print(u"send msg to %s, %s" % (task['user']['name'], task['content']))
+        rt = self.wxbot.send_msg_by_uid(task['content'], task['user']['id'])
+        print('send msg return: %s' % rt)
+        if rt:
+            self.tasks = self.tasks[1:]
             self.save_tasks()
         self.lock.release()
+        print('check task done')
 
     def stop(self):
         self.stop_event.set()
@@ -129,7 +134,7 @@ class Tasker(threading.Thread):
     def run(self):
         while(not self.stop_event.is_set()):
             self.check_tasks()
-            self.stop_event.wait(10)
+            self.stop_event.wait(3)
 
 
 class MyWXBot(WXBot):
@@ -259,8 +264,9 @@ class MyWXBot(WXBot):
 
     def send_msg_by_uid(self, msg, uid):
         self.lock.acquire()
-        WXBot.send_msg_by_uid(self, msg, uid)
+        rt = WXBot.send_msg_by_uid(self, msg, uid)
         self.lock.release()
+        return rt
 
     def handle_command_msg(self, msg):
         ctype = msg['content']['type']
