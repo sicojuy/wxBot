@@ -117,14 +117,14 @@ class Tasker(threading.Thread):
             self.lock.release()
             return True
         print(u"send msg to %s, %s" % (task['user']['name'], task['content']))
-        rt = self.wxbot.send_msg_by_uid(task['content'], task['user']['id'])
-        print('send msg return: %s' % rt)
-        if rt:
+        ok = self.wxbot.send_msg_by_name(task['content'], task['user']['name'])
+        print('send msg return: %s' % ok)
+        if ok:
             self.tasks = self.tasks[1:]
             self.save_tasks()
         self.lock.release()
-        print('check task done')
-        return True
+        return ok
+
 
     def stop(self):
         self.stop_event.set()
@@ -152,6 +152,7 @@ class MyWXBot(WXBot):
         self.tasker.stop()
         print("wait tasker to exit")
         self.tasker.join()
+        print("tasker exited")
 
     def init(self):
         rt = WXBot.init(self)
@@ -279,6 +280,18 @@ class MyWXBot(WXBot):
         rt = WXBot.send_msg_by_uid(self, msg, uid)
         self.lock.release()
         return rt
+
+    def send_msg_by_name(self, msg, name):
+        self.find_users(msg)
+        if len(self.user_search) == 0:
+            print(u"[Error] %s not found" % name)
+            return True
+        elif len(self.user_search) == 1:
+            uid = self.to_unicode(self.user_search[0]['UserName'])
+            return self.send_msg_by_uid(msg, uid)
+        else:
+            print(u"[Error] %s match multi user" % name)
+            return True
 
     def handle_command_msg(self, msg):
         ctype = msg['content']['type']
