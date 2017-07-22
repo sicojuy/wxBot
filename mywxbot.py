@@ -45,7 +45,7 @@ class Tasker(threading.Thread):
         self.load_tasks()
 
     def load_tasks(self):
-        if os.path.isfile(self.task_file)
+        if os.path.isfile(self.task_file):
             f = open(self.task_file, "r")
             try:
                 self.tasks = json.load(f)
@@ -104,10 +104,6 @@ class Tasker(threading.Thread):
             print("no task")
             self.lock.release()
             return False
-        if len(self.wxbot.contact_list) == 0:
-            print("hasn't logined")
-            self.lock.release()
-            return False
         now = time.time()
         task = self.tasks[0]
         if task['time']['timestamp'] > now:
@@ -158,7 +154,7 @@ class MyWXBot(WXBot):
         self.tasker.join()
 
     def init(self):
-        rt = WXBot.init(self):
+        rt = WXBot.init(self)
         if not rt:
             return rt
         self.tasker = Tasker(self)
