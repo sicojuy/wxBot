@@ -41,7 +41,7 @@ class Tasker(threading.Thread):
         self.stop_event = threading.Event()
         self.tasks = []
         self.wxbot = wxbot
-        self.task_file = "%s_tasks" % self.wxbot.my_account['UserName'][1:]
+        self.task_file = "%s_tasks" % self.wxbot.my_account['Uin']
         self.load_tasks()
 
     def load_tasks(self):
@@ -316,6 +316,7 @@ class MyWXBot(WXBot):
         print("pass contact msg")
 
     def handle_msg_all(self, msg):
+        print(msg)
         if msg['msg_type_id'] == 1:
             self.handle_self_msg(msg)
         elif msg['msg_type_id'] == 3:
