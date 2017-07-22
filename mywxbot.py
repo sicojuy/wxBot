@@ -85,14 +85,14 @@ class Tasker(threading.Thread):
         self.lock.acquire()
         if len(self.tasks) == 0:
             self.lock.release()
-            return "当前没有定时任务"
-        result = ""
+            return u"当前没有定时任务"
+        result = u""
         i = 1
         for task in self.tasks:
-            msg += "%d. 发送时间：%s；接收人：%s；内容：%s\n" % (i, task['time']['format'], task['user']['name'].encode('utf-8'), task['content'].encode('utf-8'))
+            result += u"%d. 发送时间：%s；接收人：%s；内容：%s\n" % (i, task['time']['format'], task['user']['name'], tsk['content'])
             i += 1
         self.lock.release()
-        return msg[:-1]
+        return result[:-1]
 
     def stop(self):
         self.stop_event.set()
@@ -157,11 +157,11 @@ class MyWXBot(WXBot):
                 try:
                     date = datetime.datetime.strptime(items[0], "%m-%d")
                 except ValueError: 
-                    return '日期格式不对，请重新输入'
+                    return u'日期格式不对，请重新输入'
             try:
                 dttime = datetime.datetime.strptime(items[1], "%H:%M")
             except ValueError: 
-                return '时间格式不对，请重新输入'
+                return u'时间格式不对，请重新输入'
             dt = datetime.datetime.combine(date, dttime.time())
             self.task_adding['time'] = {
                 'format': dt.strftime("%m-%d %H:%M"),
@@ -172,7 +172,7 @@ class MyWXBot(WXBot):
         elif self.input_type == InputType.TaskUser:
             self.find_users(msg)
             if len(self.user_search) == 0:
-                return '联系人不存在，请重新输入'
+                return u'联系人不存在，请重新输入'
             elif len(self.user_search) == 1:
                 self.task_adding['user'] = {
                     "name": self.user_search[0]['DisplayName'],
@@ -181,21 +181,21 @@ class MyWXBot(WXBot):
                 self.input_type = InputType.TaskContent
                 return task_content_help
             else:
-                result = ""
+                result = u""
                 i = 1
                 for user in self.user_search:
-                    result += "%d. %s\n" % (i, user['DisplayName'].encode('utf-8'))
+                    result += u"%d. %s\n" % (i, user['DisplayName'])
                     i += 1
-                result += '\n请输入联系人编号选择联系人'
+                result += u'\n请输入联系人编号选择联系人'
                 self.input_type = InputType.TaskUserID
                 return result
         elif self.input_type == InputType.TaskUserID:
             try:
                 i = int(msg)
             except ValueError:
-                return '联系人编号为数字，请重新输入'
+                return u'联系人编号为数字，请重新输入'
             if i > len(self.user_search) or i <= 0:
-                return '联系人编号不正确，请重新输入'
+                return u'联系人编号不正确，请重新输入'
             self.task_adding['user'] = {
                 "name": self.user_search[i-1]['DisplayName'],
                 "id": self.user_search[i-1]['UserName']
@@ -205,10 +205,10 @@ class MyWXBot(WXBot):
         elif self.input_type == InputType.TaskContent:
             self.task_adding['content'] = msg
             self.input_type = None
-            result = "成功添加任务\n\n"
-            result += "发送时间：%s\n" % self.task_adding['time']['format']
-            result += "接收人：%s\n" % self.task_adding['user']['name'].encode('utf-8')
-            result += "内容：%s" % self.task_adding['content'].encode('utf-8')
+            result = u"成功添加任务\n\n"
+            result += u"发送时间：%s\n" % self.task_adding['time']['format']
+            result += u"接收人：%s\n" % self.task_adding['user']['name']
+            result += u"内容：%s" % self.task_adding['content']
             self.tasker.add_task(self.task_adding)
             self.task_adding = {}
             return result
@@ -216,20 +216,20 @@ class MyWXBot(WXBot):
             try:
                 i = int(msg)
             except ValueError:
-                return '任务编号为数字，请重新输入'
+                return u'任务编号为数字，请重新输入'
             rt = self.tasker.del_task(i)
             if rt == 0:
                 self.input_type = None
-                return '成功删除定时任务'
+                return u'成功删除定时任务'
             elif rt == -1:
-                return '任务不存在，请重新输入任务编号'
+                return u'任务不存在，请重新输入任务编号'
 
     def send_msg_by_uid(self, msg, uid):
         self.lock.acquire()
         WXBot.send_msg_by_uid(self, msg, uid)
         self.lock.release()
 
-    def handle_msg(self, msg):
+    def handle_command_msg(self, msg):
         print("handle self msg")
         ctype = msg['content']['type']
         cdata = msg['content']['data'].strip()
@@ -247,7 +247,7 @@ class MyWXBot(WXBot):
                 self.input_type = InputType.TaskID
                 result = self.tasker.get_tasks()
                 if result[0] == '1':
-                    result += "\n\n请输入要删除的任务编号"
+                    result += u"\n\n请输入要删除的任务编号"
                 self.send_msg_by_uid(result, uid)
             elif cdata in [u'查看群组']:
                 print(self.group_list)
@@ -259,7 +259,7 @@ class MyWXBot(WXBot):
 
     def handle_self_msg(self, msg):
         print("handle self msg")
-        self.handle_msg(msg)
+        self.handle_command_msg(msg)
 
     def handle_group_msg(self, msg):
         print("pass group msg")
