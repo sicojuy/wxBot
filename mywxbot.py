@@ -7,6 +7,7 @@ import datetime
 import time
 import json
 import os
+import sys
 
 help_msg = '''支持以下命令：
 
@@ -148,6 +149,8 @@ class MyWXBot(WXBot):
         self.user_search = []
 
     def stop(self):
+        if self.tasker is None:
+            return
         print("stop tasker")
         self.tasker.stop()
         print("wait tasker to exit")
@@ -163,25 +166,34 @@ class MyWXBot(WXBot):
         return rt
 
     def find_users(self, name):
+        print(u"find user name: %s" % name)
         name = name.lower()
         self.user_search = []
         for user in self.contact_list:
             if len(user['RemarkName']) > 0 and user['RemarkName'].lower().find(name) != -1:
+                print(u"match user: %s" % user)
                 self.user_search.append({'UserName': user['UserName'], 'DisplayName': user['RemarkName']})
             elif len(user['RemarkPYQuanPin']) > 0 and user['RemarkPYQuanPin'].lower().find(name) != -1:
+                print(u"match user: %s" % user)
                 self.user_search.append({'UserName': user['UserName'], 'DisplayName': user['RemarkName']})
             elif len(user['NickName']) > 0 and user['NickName'].lower().find(name) != -1:
+                print(u"match user: %s" % user)
                 self.user_search.append({'UserName': user['UserName'], 'DisplayName': user['NickName']})
             elif len(user['PYQuanPin']) > 0 and user['PYQuanPin'].lower().find(name) != -1:
+                print(u"match user: %s" % user)
                 self.user_search.append({'UserName': user['UserName'], 'DisplayName': user['NickName']})
         for group in self.group_list:
             if len(group['RemarkName']) > 0 and group['RemarkName'].lower().find(name) != -1:
+                print(u"match group: %s" % group)
                 self.user_search.append({'UserName': group['UserName'], 'DisplayName': group['RemarkName']})
             elif len(group['RemarkPYQuanPin']) > 0 and group['RemarkPYQuanPin'].lower().find(name) != -1:
+                print(u"match group: %s" % group)
                 self.user_search.append({'UserName': group['UserName'], 'DisplayName': group['RemarkName']})
             elif len(group['NickName']) > 0 and group['NickName'].lower().find(name) != -1:
+                print(u"match group: %s" % group)
                 self.user_search.append({'UserName': group['UserName'], 'DisplayName': group['NickName']})
             elif len(group['PYQuanPin']) > 0 and group['PYQuanPin'].lower().find(name) != -1:
+                print(u"match group: %s" % group)
                 self.user_search.append({'UserName': group['UserName'], 'DisplayName': group['NickName']})
 
     def handle_input_msg(self, msg):
@@ -203,11 +215,11 @@ class MyWXBot(WXBot):
                         date = datetime.date(today.year, dt.month, dt.day)
                     else:
                         date = datetime.date(today.year+1, dt.month, dt.day)
-                except ValueError: 
+                except ValueError:
                     return u'日期格式不对，请重新输入'
             try:
                 dttime = datetime.datetime.strptime(items[1], "%H:%M")
-            except ValueError: 
+            except ValueError:
                 return u'时间格式不对，请重新输入'
             dt = datetime.datetime.combine(date, dttime.time())
             self.task_adding['time'] = {
@@ -282,7 +294,7 @@ class MyWXBot(WXBot):
         return rt
 
     def send_msg_by_name(self, msg, name):
-        self.find_users(msg)
+        self.find_users(name)
         if len(self.user_search) == 0:
             print(u"[Error] %s not found" % name)
             return True
@@ -312,8 +324,6 @@ class MyWXBot(WXBot):
                 if result[0] == '1':
                     result += u"\n\n请输入要删除的任务编号"
                 self.send_msg_by_uid(result, uid)
-            elif cdata in [u'xxx']:
-                print(self.my_account)
             elif self.input_type != None:
                 result = self.handle_input_msg(cdata)
                 self.send_msg_by_uid(result, uid)
@@ -329,7 +339,6 @@ class MyWXBot(WXBot):
         print("pass contact msg")
 
     def handle_msg_all(self, msg):
-        print(msg)
         if msg['msg_type_id'] == 1:
             self.handle_self_msg(msg)
         elif msg['msg_type_id'] == 3:
@@ -339,6 +348,9 @@ class MyWXBot(WXBot):
 
 
 def main():
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
+
     bot = MyWXBot()
     bot.DEBUG = True
     bot.conf['qr'] = 'tty'
