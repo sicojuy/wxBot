@@ -259,7 +259,26 @@ python test.py
     python bot.py
     ```
 
-## 6 类似项目
+## 6 定时发送消息机器人
+
+### 6.1 运行 ***cronbot.py***
+
+    ```python
+    python cronbot.py
+    ```
+ 
+### 6.2 使用帮助
+
+扫码登录后，通过发送文本消息命令操作，命令如下：
+
+* "帮助/help"
+* "001/查看定时任务"
+* "002/添加定时任务"
+* "003/删除定时任务"
+
+***注意，如果消息接收人的昵称或者备注名有同名，无法发送定时消息。***
+
+## 7 类似项目
 
 [feit/Weixinbot](https://github.com/feit/Weixinbot) Nodejs 封装网页版微信的接口，可编程控制微信消息
 
@@ -269,10 +288,10 @@ python test.py
 
 [zixia/wechaty](https://github.com/zixia/wechaty) Wechaty is wechat for bot in Javascript(ES6). It's a Personal Account Robot Framework/Library.
 
-## 7 基于Wxbot延伸的一些项目
+## 8 基于Wxbot延伸的一些项目
 [WxbotManage](https://coding.net/u/vivre/p/WxbotManage/git) 基于Wxbot的微信多开管理和Webapi系统
 
-## 8 交流讨论
+## 9 交流讨论
 
 问题可以直接开 **issue**
 
