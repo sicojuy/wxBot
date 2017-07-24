@@ -263,9 +263,9 @@ python test.py
 
 ### 6.1 运行 ***cronbot.py***
 
-    ```python
-    python cronbot.py
-    ```
+```python
+python cronbot.py
+```
  
 ### 6.2 使用帮助
 
