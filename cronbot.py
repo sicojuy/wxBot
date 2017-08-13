@@ -307,7 +307,7 @@ class CronBot(WXBot):
             print(u"[Error] %s match multi user" % name)
             return True
     
-    def contact_statis():
+    def contact_statis(self):
         result = u"联系人数量：%d" % len(self.contact_list)
         result += "\n公众号数量：%d" % len(self.public_list)
         result += "\n群聊数量：%d" % len(self.group_list)
