@@ -335,7 +335,8 @@ class CronBot(WXBot):
             if len(city) == 0:
                 city = u"未知"
             cities[city] = cities.get(city, 0) + 1
-        cities_sorted = sorted(cities.items(), key=operator.itemgetter(1)).reverse()
+        cities_sorted = sorted(cities.items(), key=operator.itemgetter(1))
+        cities_sorted.reverse()
         result = ""
         for city in cities_sorted:
             if city[1] <= 1:
