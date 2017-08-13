@@ -327,15 +327,19 @@ class CronBot(WXBot):
         return result
 
     def zone_statis(self):
-        citys = {}
+        cities = {}
         for user in self.contact_list:
             city = user['City']
+            if user['Province'] in [u'北京', u'上海', u'天津', u'重庆']:
+                city = user['Province']
             if len(city) == 0:
                 city = u"未知"
-            citys[city] = citys.get(city, 0) + 1
-        citys_sorted = sorted(citys.items(), key=operator.itemgetter(1)) 
+            cities[city] = cities.get(city, 0) + 1
+        cities_sorted = sorted(cities.items(), key=operator.itemgetter(1)).reverse()
         result = ""
-        for city in citys_sorted:
+        for city in cities_sorted:
+            if city[1] <= 1:
+                continue
             result += u"%s：%d\n" % (city[0], city[1])
         return result[0:len(result)-1]
 
