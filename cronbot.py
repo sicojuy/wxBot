@@ -9,11 +9,13 @@ import json
 import os
 import sys
 
-help_msg = '''支持以下命令：
-
-001. 查看定时任务
+help_msg = '''001. 查看定时任务
 002. 添加定时任务
-003. 删除定时任务'''
+003. 删除定时任务
+
+101. 通讯录统计
+102. 好友性别统计
+103. 好友地区统计'''
 
 task_time_help = '''请输入发送日期和时间（使用空格分隔日期跟时间），例如：
 今天 07:30
@@ -139,7 +141,7 @@ class Tasker(threading.Thread):
                 self.stop_event.wait(30)
 
 
-class MyWXBot(WXBot):
+class CronBot(WXBot):
     def __init__(self):
         WXBot.__init__(self)
         self.lock = threading.Lock()
@@ -304,6 +306,12 @@ class MyWXBot(WXBot):
         else:
             print(u"[Error] %s match multi user" % name)
             return True
+    
+    def contact_statis():
+        result = u"联系人数量：%d" % len(self.contact_list)
+        result += "\n公众号数量：%d" % len(self.public_list)
+        result += "\n群聊数量：%d" % len(self.group_list)
+        return result
 
     def handle_command_msg(self, msg):
         ctype = msg['content']['type']
@@ -323,6 +331,9 @@ class MyWXBot(WXBot):
                 result = self.tasker.get_tasks()
                 if result[0] == '1':
                     result += u"\n\n请输入要删除的任务编号"
+                self.send_msg_by_uid(result, uid)
+            elif cdata in ['101', u'好友数量']:
+                result = self.contact_statis()
                 self.send_msg_by_uid(result, uid)
             elif self.input_type != None:
                 result = self.handle_input_msg(cdata)
@@ -351,7 +362,7 @@ def main():
     reload(sys)
     sys.setdefaultencoding('utf-8')
 
-    bot = MyWXBot()
+    bot = CronBot()
     bot.DEBUG = True
     bot.conf['qr'] = 'tty'
     bot.run()
