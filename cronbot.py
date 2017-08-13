@@ -315,7 +315,7 @@ class CronBot(WXBot):
         return result
 
     def sex_statis(self):
-        man, woman, unknown = 0
+        man, woman, unknown = 0, 0, 0
         for user in self.contact_list:
             if user['Sex'] == 1:
                 man += 1
