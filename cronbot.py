@@ -4,6 +4,7 @@
 from wxbot import *
 import threading
 import datetime
+import operator
 import time
 import json
 import os
@@ -313,6 +314,31 @@ class CronBot(WXBot):
         result += "\n群聊数量：%d" % len(self.group_list)
         return result
 
+    def sex_statis(self):
+        man, woman, unknown = 0
+        for user in self.contact_list:
+            if user['Sex'] == 1:
+                man += 1
+            elif user['Sex'] == 2:
+                woman += 1
+            else:
+                unknown += 1
+        result = u"男性：%d\n女性：%d\n未知：%d" % (man, woman, unknown)
+        return result
+
+    def zone_statis(self):
+        citys = {}
+        for user in self.contact_list:
+            city = user['City']
+            if len(city) == 0:
+                city = u"未知"
+            citys[city] = citys.get(city, 0) + 1
+        citys_sorted = sorted(citys.items(), key=operator.itemgetter(1)) 
+        result = ""
+        for city in citys_sorted:
+            result += u"%s：%d\n" % (city[0], city[1])
+        return result[0:len(result)-1]
+
     def handle_command_msg(self, msg):
         ctype = msg['content']['type']
         cdata = self.to_unicode(msg['content']['data'].strip())
@@ -332,8 +358,14 @@ class CronBot(WXBot):
                 if result[0] == '1':
                     result += u"\n\n请输入要删除的任务编号"
                 self.send_msg_by_uid(result, uid)
-            elif cdata in ['101', u'好友数量']:
+            elif cdata in ['101', u'通讯录统计']:
                 result = self.contact_statis()
+                self.send_msg_by_uid(result, uid)
+            elif cdata in ['102', u'好友性别统计']:
+                result = self.sex_statis()
+                self.send_msg_by_uid(result, uid)
+            elif cdata in ['103', u'好友地区统计']:
+                result = self.zone_statis()
                 self.send_msg_by_uid(result, uid)
             elif self.input_type != None:
                 result = self.handle_input_msg(cdata)
